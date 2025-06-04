@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coup - The Board Game Online</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="connectionStatus" class="status-bar">
+        <span id="connectionIndicator">Connecting...</span>
+        <span id="playerId"></span>
+    </div>
+
+    <h1>Coup - The Resistance Universe</h1>
+    
+    <div id="lobby" class="screen">
+        <h2>Game Lobby</h2>
+        <div id="roomControls">
+            <div class="input-group">
+                <label for="roomCode">Room Code:</label>
+                <input type="text" id="roomCode" placeholder="Enter room code">
+                <button onclick="joinRoom()">Join Room</button>
+            </div>
+            <div class="divider">OR</div>
+            <button onclick="createRoom()" class="primary-btn">Create New Room</button>
+        </div>
+        
+        <div id="roomInfo" style="display: none;">
+            <h3>Room: <span id="currentRoomCode"></span></h3>
+            <div id="playersList"></div>
+            <div id="hostControls" style="display: none;">
+                <button onclick="startMultiplayerGame()" class="primary-btn" id="startGameBtn" disabled>Start Game</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameBoard" class="screen" style="display: none;">
+        <div id="gameStatus">
+            <h2>Game Status</h2>
+            <p id="currentPlayer"></p>
+            <p id="treasury"></p>
+            <p id="turnTimer"></p>
+        </div>
+
+        <div id="players"></div>
+
+        <div id="actions">
+            <h3>Choose Your Action:</h3>
+            <div class="action-buttons">
+                <button onclick="performAction('income')" class="action-btn">Income<br><small>(+1 coin)</small></button>
+                <button onclick="performAction('foreignAid')" class="action-btn">Foreign Aid<br><small>(+2 coins)</small></button>
+                <button onclick="performAction('coup')" class="action-btn">Coup<br><small>(7 coins)</small></button>
+                <button onclick="performAction('tax')" class="action-btn character-action">Tax - Duke<br><small>(+3 coins)</small></button>
+                <button onclick="performAction('assassinate')" class="action-btn character-action">Assassinate<br><small>(3 coins)</small></button>
+                <button onclick="performAction('steal')" class="action-btn character-action">Steal - Captain<br><small>(take 2 coins)</small></button>
+                <button onclick="performAction('exchange')" class="action-btn character-action">Exchange<br><small>(Ambassador)</small></button>
+            </div>
+        </div>
+
+        <div id="challenges" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Challenge or Block?</h3>
+                <div id="challengeTimer"></div>
+                <div id="challengeOptions"></div>
+            </div>
+        </div>
+
+        <div id="targetSelection" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Select Target:</h3>
+                <div id="targetButtons"></div>
+            </div>
+        </div>
+
+        <div id="cardSelection" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Select Cards to Keep:</h3>
+                <div id="cardOptions"></div>
+            </div>
+        </div>
+
+        <div id="loseInfluence" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Choose a card to lose:</h3>
+                <div id="influenceOptions"></div>
+            </div>
+        </div>
+
+        <div id="gameLog">
+            <h3>Game Log</h3>
+            <div id="logMessages"></div>
+        </div>
+    </div>
+
+    <div id="gameEnd" class="screen" style="display: none;">
+        <h2>Game Over!</h2>
+        <div id="gameResult"></div>
+        <button onclick="returnToLobby()" class="primary-btn">Return to Lobby</button>
+    </div>
+
+    <!-- Audio elements for game sounds -->
+    <audio id="actionSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwg=" type="audio/wav">
+    </audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
