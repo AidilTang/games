@@ -89,7 +89,17 @@ class GameRoom {
         const playerList = this.players.map(p => ({ id: p.id, name: p.name, isHost: p.isHost }));
         this.players.forEach(player => player.socket.emit('playersUpdated', { players: playerList }));
     }
-
+    broadcastNotification(message, type = 'info', excludePlayerId = null, duration = 3000) {
+        this.players.forEach(player => {
+            if (player.id !== excludePlayerId && player.socket && player.socket.connected) {
+                player.socket.emit('actionNotification', { 
+                    message, 
+                    type, 
+                    duration 
+                });
+            }
+        });
+    }
     startGame() {
         if (this.players.length < 2 || this.players.length > 6) return { success: false, message: 'Need 2-6 players to start' };
         
@@ -254,10 +264,13 @@ class GameRoom {
             
             this.broadcastLog(`${challenger.name} challenges ${blocker.name}'s block (${blockingCard})`);
             
+            this.broadcastNotification(`${challenger.name} challenged ${blocker.name}'s ${blockingCard} block`, 'warning', null);
+
             const hasBlockingCard = blocker.influence.includes(blockingCard);
             
             if (hasBlockingCard) {
                 this.broadcastLog(`${blocker.name} reveals ${blockingCard} and wins the challenge!`);
+                this.broadcastNotification(`${blocker.name} won the challenge! Block successful`, 'success', null);
                 this.handleInfluenceLoss(challengerId, () => {
                     const cardIndex = blocker.influence.indexOf(blockingCard);
                     if (cardIndex !== -1) {
@@ -272,6 +285,7 @@ class GameRoom {
                 });
             } else {
                 this.broadcastLog(`${blocker.name} cannot show ${blockingCard} and loses the challenge!`);
+                this.broadcastNotification(`${blocker.name} lost the challenge!`, 'error', null);
                 this.handleInfluenceLoss(this.gameState.pendingAction.blocker, () => {
                     this.gameState.pendingAction.blocker = null;
                     this.gameState.pendingAction.blocked = false;
@@ -283,7 +297,7 @@ class GameRoom {
             if (!actor) return;
             
             this.broadcastLog(`${challenger.name} challenges ${actor.name}'s ${this.gameState.pendingAction.type}`);
-            
+            this.broadcastNotification(`${challenger.name} challenged ${actor.name}'s ${this.gameState.pendingAction.type}`, 'warning', null);
             const requiredCard = this.getRequiredCard(this.gameState.pendingAction.type);
             if (!requiredCard) return;
             
@@ -329,7 +343,8 @@ class GameRoom {
             }
         });
         this.broadcastLog(`${blocker.name} attempts to block with ${blockingCard}`);
-        
+        this.broadcastNotification(`${blocker.name} blocked with ${blockingCard}`, 'info', null);
+
         this.gameState.pendingAction.blocker = blockerId;
         this.gameState.pendingAction.blockingCard = blockingCard;
         this.gameState.pendingAction.blocked = true;
@@ -398,12 +413,16 @@ class GameRoom {
                 actor.coins += 1;
                 this.gameState.treasury = Math.max(0, this.gameState.treasury - 1);
                 this.broadcastLog(`${actor.name} takes 1 coin (Income)`);
+                // Add notification
+                this.broadcastNotification(`${actor.name} took 1 coin (Income)`, 'info', actor.id);
                 break;
 
             case 'foreignAid':
                 actor.coins += 2;
                 this.gameState.treasury = Math.max(0, this.gameState.treasury - 2);
                 this.broadcastLog(`${actor.name} takes 2 coins (Foreign Aid)`);
+                // Add notification
+                this.broadcastNotification(`${actor.name} took 2 coins (Foreign Aid)`, 'info', actor.id);
                 break;
 
             case 'coup': {
@@ -412,6 +431,8 @@ class GameRoom {
                 const coupTarget = this.gameState.players[action.target];
                 if (!coupTarget) { this.gameState.pendingAction = null; return; }
                 this.broadcastLog(`${actor.name} launches coup against ${coupTarget.name}`);
+                // Add notification
+                this.broadcastNotification(`${actor.name} launched coup against ${coupTarget.name}`, 'warning', null);
                 this.handleInfluenceLoss(coupTarget.id, () => { this.gameState.pendingAction = null; this.nextTurn(); });
                 return;
             }
@@ -420,6 +441,8 @@ class GameRoom {
                 actor.coins += 3;
                 this.gameState.treasury = Math.max(0, this.gameState.treasury - 3);
                 this.broadcastLog(`${actor.name} takes 3 coins (Tax - Duke)`);
+                // Add notification
+                this.broadcastNotification(`${actor.name} took 3 coins (Tax - Duke)`, 'info', actor.id);
                 break;
 
             case 'assassinate': {
@@ -428,6 +451,8 @@ class GameRoom {
                 const assassinTarget = this.gameState.players[action.target];
                 if (!assassinTarget) { this.gameState.pendingAction = null; return; }
                 this.broadcastLog(`${actor.name} assassinates ${assassinTarget.name}`);
+                // Add notification
+                this.broadcastNotification(`${actor.name} assassinated ${assassinTarget.name}`, 'error', null);
                 this.handleInfluenceLoss(assassinTarget.id, () => { this.gameState.pendingAction = null; this.nextTurn(); });
                 return;
             }
@@ -439,14 +464,23 @@ class GameRoom {
                 actor.coins += coinsToSteal;
                 stealTarget.coins -= coinsToSteal;
                 this.broadcastLog(`${actor.name} steals ${coinsToSteal} coins from ${stealTarget.name}`);
+                // Add notification
+                this.broadcastNotification(`${actor.name} stole ${coinsToSteal} coins from ${stealTarget.name}`, 'warning', null);
                 break;
             }
 
             case 'exchange':
-                if (this.gameState.courtDeck.length < 2) { this.broadcastLog(`Not enough cards in deck for exchange`); break; }
+                if (this.gameState.courtDeck.length < 2) { 
+                    this.broadcastLog(`Not enough cards in deck for exchange`); 
+                    // Add notification
+                    this.broadcastNotification(`${actor.name} attempted exchange but deck is low`, 'warning', actor.id);
+                    break; 
+                }
                 const drawnCards = [this.gameState.courtDeck.pop(), this.gameState.courtDeck.pop()];
                 const allCards = [...actor.influence, ...drawnCards];
                 this.exchangeCards = allCards;
+                // Add notification
+                this.broadcastNotification(`${actor.name} is exchanging cards with the Court`, 'info', actor.id);
                 this.getPlayerSocket(actor.id).emit('actionRequired', { type: 'selectCards', cards: allCards, keepCount: actor.influence.length });
                 return;
         }
@@ -484,6 +518,7 @@ class GameRoom {
             player.revealedCards.push(lostCard);
             this.gameState.revealedCards.push(lostCard);
             this.broadcastLog(`${player.name} loses ${lostCard} and is exiled!`);
+            this.broadcastNotification(`${player.name} lost ${lostCard} and was exiled!`, 'error', null);
             player.isAlive = false;
             this.gameState.treasury += player.coins;
             player.coins = 0;
@@ -492,6 +527,7 @@ class GameRoom {
             if (this.checkGameEnd()) { if (callback) callback(); return; }
             if (callback) callback();
         } else {
+            this.broadcastNotification(`${player.name} must lose influence`, 'warning', player.id);
             const playerSocket = this.getPlayerSocket(playerId);
             if (!playerSocket) { if (callback) callback(); return; }
             

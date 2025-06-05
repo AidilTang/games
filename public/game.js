@@ -16,11 +16,54 @@ class CoupGame {
         this.CHALLENGE_TIME_LIMIT = 30000;
         this.challengeTimer = null;
         this.init();
+        this.notificationQueue = [];
+        this.notificationTimer = null;
     }
 
     init() {
         this.connectToServer();
         this.setupEventListeners();
+    }
+    showNotification(message, type = 'info', duration = 3000) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `game-notification ${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <span class="notification-message">${message}</span>
+                <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+            </div>
+        `;
+
+        // Add to notification container
+        let container = document.getElementById('notificationContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'notificationContainer';
+            container.className = 'notification-container';
+            document.body.appendChild(container);
+        }
+
+        container.appendChild(notification);
+
+        // Auto-remove after duration
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
+        }, duration);
+
+        // Animate in
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        }, 100);
     }
 
     connectToServer() {
@@ -53,6 +96,9 @@ class CoupGame {
             gameEnded: (data) => this.handleGameEnd(data),
             timerUpdate: (data) => this.updateTimer(data),
             logMessage: (data) => this.logMessage(data.message),
+            actionNotification: (data) => {
+                this.showNotification(data.message, data.type || 'info', data.duration || 3000);
+            },
             waitingForResponse: (data) => this.showWaitingMessage(data),
             hideWaiting: () => {
                 try {
@@ -64,6 +110,18 @@ class CoupGame {
         };
 
         Object.entries(events).forEach(([event, handler]) => this.socket.on(event, handler));
+    }
+
+    showSuccessNotification(message) {
+        this.showNotification(message, 'success');
+    }
+
+    showWarningNotification(message) {
+        this.showNotification(message, 'warning');
+    }
+
+    showErrorNotification(message) {
+        this.showNotification(message, 'error');
     }
 
     setupEventListeners() {
@@ -154,15 +212,38 @@ class CoupGame {
             div.className = `player-card ${index === this.gameState.currentPlayer ? 'current-player' : ''} ${!player.isAlive ? 'exiled' : ''}`;
             
             const showCards = player.id === this.playerId && player.isAlive;
+            let cardsHTML = '';
+            if (showCards) {
+                cardsHTML = `<div class="player-cards">Your cards: ${this.createCardImagesHTML(player.influence)}</div>`;
+            }
+            
+            // Create revealed cards HTML
+            let revealedHTML = '';
+            if (player.revealedCards.length > 0) {
+                revealedHTML = `<div class="revealed-cards">Revealed: ${this.createCardImagesHTML(player.revealedCards)}</div>`;
+            }
+            
             div.innerHTML = `
                 <h4>${player.name} ${!player.isAlive ? '(EXILED)' : ''}</h4>
                 <p class="player-coins">Coins: ${player.coins}</p>
                 <p class="player-influence">Influence: ${player.influence.length} cards</p>
-                <p>Revealed: ${player.revealedCards.join(', ') || 'None'}</p>
-                ${showCards ? `<div class="player-cards">Your cards: ${player.influence.join(', ')}</div>` : ''}
+                ${revealedHTML}
+                ${cardsHTML}
             `;
             playersDiv.appendChild(div);
         });
+    }
+    createCardImagesHTML(cards) {
+        if (!cards || cards.length === 0) return 'None';
+        
+        return cards.map(card => {
+            if (card === 'Hidden') {
+                return `<img src="images/card-back.jpg" alt="Hidden Card" class="card-image" />`;
+            } else {
+                const cardName = card.toLowerCase().replace(/\s+/g, '-');
+                return `<img src="images/${cardName}.jpg" alt="${card}" class="card-image" title="${card}" />`;
+            }
+        }).join('');
     }
 
     updateActionButtons() {
@@ -397,8 +478,16 @@ class CoupGame {
                 }
             };
             
-            label.appendChild(checkbox);
-            label.appendChild(document.createTextNode(card));
+            const cardName = card.toLowerCase().replace(/\s+/g, '-');
+            label.innerHTML = `
+                ${checkbox.outerHTML}
+                <img src="images/${cardName}.png" alt="${card}" class="card-image" />
+                <span>${card}</span>
+            `;
+            
+            // Re-attach the event listener since innerHTML overwrites it
+            label.querySelector('input').onchange = checkbox.onchange;
+            
             optionsDiv.appendChild(label);
         });
         
@@ -423,7 +512,10 @@ class CoupGame {
         
         playerCards.forEach((card, index) => {
             const button = document.createElement('button');
-            button.textContent = card;
+            button.className = 'card-selection-btn';
+            
+            const cardName = card.toLowerCase().replace(/\s+/g, '-');
+            button.innerHTML = `<img src="images/${cardName}.png" alt="${card}" class="card-image" /> ${card}`;
             button.onclick = () => this.loseInfluenceCard(index);
             optionsDiv.appendChild(button);
         });

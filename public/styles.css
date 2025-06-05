@@ -340,71 +340,6 @@ button:hover::before {
     font-weight: bold;
 }
 
-/* Character Card Images */
-.character-card {
-    width: 60px;
-    height: 90px;
-    border-radius: 8px;
-    margin: 0 5px;
-    display: inline-block;
-    background-size: cover;
-    background-position: center;
-    border: 2px solid var(--secondary-color);
-    transition: var(--transition);
-}
-
-.character-card:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 15px rgba(218, 165, 32, 0.5);
-}
-
-/* Character-specific backgrounds */
-.character-card.duke {
-    background-image: 
-        linear-gradient(45deg, #4A4A4A, #6A6A6A),
-        url('./images/duke.jpg');
-    background-blend-mode: overlay; /* Optional: blends the gradient over the image */
-    background-size: cover;
-    background-position: center;
-}
-
-.character-card.assassin {
-    background-image: 
-        linear-gradient(45deg, #8B0000, #B22222), /* dark red tones */
-        url('./images/assassin.jpg');
-    background-blend-mode: overlay;
-    background-size: cover;
-    background-position: center;
-}
-
-.character-card.captain {
-    background-image: 
-        linear-gradient(45deg, #003366, #0055AA), /* navy blue tones */
-        url('./images/captain.jpg');
-    background-blend-mode: overlay;
-    background-size: cover;
-    background-position: center;
-}
-
-.character-card.ambassador {
-    background-image: 
-        linear-gradient(45deg, #2F4F4F, #708090), /* slate grey tones */
-        url('./images/ambassador.jpg');
-    background-blend-mode: overlay;
-    background-size: cover;
-    background-position: center;
-}
-
-.character-card.contessa {
-    background-image: 
-        linear-gradient(45deg, #9932CC, #BA55D3), /* purple tones */
-        url('./images/contessa.jpg');
-    background-blend-mode: overlay;
-    background-size: cover;
-    background-position: center;
-}
-
-
 /* Action Buttons */
 #actions {
     background: var(--card-bg);
@@ -740,4 +675,182 @@ button:hover::before {
         --text-light: #FFF;
         --card-bg: #222;
     }
+}
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px; /* increased */
+}
+
+.game-notification {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px; /* slightly larger */
+    border-left: 6px solid #007bff;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease-in-out;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: slideIn 0.3s ease-out;
+}
+
+.game-notification.info {
+    border-left-color: #007bff;
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(255, 255, 255, 0.95));
+}
+
+.game-notification.success {
+    border-left-color: #28a745;
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.08), rgba(255, 255, 255, 0.95));
+}
+
+.game-notification.warning {
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.08), rgba(255, 255, 255, 0.95));
+}
+
+.game-notification.error {
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.08), rgba(255, 255, 255, 0.95));
+}
+
+.notification-content {
+    padding: 18px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+}
+
+.notification-message {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111; /* darker for contrast */
+    flex: 1;
+    line-height: 1.5;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.notification-close:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #333;
+}
+
+.game-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.game-notification.removing {
+    animation: slideOut 0.3s ease-in forwards;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .notification-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+
+    .notification-content {
+        padding: 14px 16px;
+    }
+
+    .notification-message {
+        font-size: 15px;
+    }
+}
+.influence-cards {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.card-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #f0f0f0;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    padding: 8px;
+    min-width: 80px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-image {
+    width: 60px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.card-name {
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 4px;
+    text-align: center;
+    color: #333;
+}
+
+.player-cards {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.player-cards h5 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 14px;
 }
