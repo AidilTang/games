@@ -24,14 +24,22 @@ class CoupGame {
     }
 
     connectToServer() {
-        this.socket = io('ws://localhost:3000', {
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const serverUrl = isProduction ? window.location.origin : 'http://localhost:3000';
+        
+        console.log('Connecting to server:', serverUrl);
+
+        this.socket = io(serverUrl, {
             transports: ['websocket', 'polling'], timeout: 20000,
-            reconnection: true, reconnectionAttempts: 5, reconnectionDelay: 1000
+            reconnection: true, reconnectionAttempts: 5, reconnectionDelay: 1000,
+            forceNew: true,
+            upgrade: true,
+            rememberUpgrade: true
         });
 
         const events = {
-            connect: () => { this.updateConnectionStatus('Connected', true); console.log('Connected to server'); },
-            disconnect: () => { this.updateConnectionStatus('Disconnected', false); console.log('Disconnected from server'); },
+            connect: () => { this.updateConnectionStatus('Connected', true); console.log('Connected to server at:',serverUrl); },
+            disconnect: (reason) => { this.updateConnectionStatus('Disconnected', false); console.log('Disconnected from server:', reason); },
             connect_error: (error) => { console.error('Connection error:', error); this.updateConnectionStatus('Connection Error', false); },
             playerAssigned: (data) => { this.playerId = data.playerId; document.getElementById('playerId').textContent = `Player ID: ${this.playerId}`; },
             roomCreated: (data) => { this.roomCode = data.roomCode; this.isHost = true; this.showRoom(); },

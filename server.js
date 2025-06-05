@@ -5,9 +5,39 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
+const io = socketIo(server, { 
+    cors: { 
+        origin: process.env.NODE_ENV === 'production' 
+            ? ["https://coup-m680.onrender.com"] 
+            : ["http://localhost:3000", "http://127.0.0.1:3000"],
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    transports: ['websocket', 'polling'],
+    allowEIO3: true
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use((req, res, next) => {
+    const allowedOrigins = process.env.NODE_ENV === 'production' 
+        ? ['https://coup-m680.onrender.com']
+        : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+    
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    next();
+});
+
+// Serve the main page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 class GameRoom {
     constructor(roomCode) {
